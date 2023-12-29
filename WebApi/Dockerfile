@@ -11,7 +11,7 @@ WORKDIR /src
 COPY ["WebApi/WebApi.csproj", "WebApi/"]
 RUN dotnet restore "WebApi/WebApi.csproj"
 COPY . .
-WORKDIR "/src/GChat"
+WORKDIR "/src/WebApi"
 RUN dotnet build "WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
