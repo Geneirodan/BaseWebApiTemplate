@@ -4,6 +4,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApi", "WebApi\WebApi.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataAccess", "DataAccess\DataAccess.csproj", "{C4FB1FB1-4DDE-4867-8447-E9D7267B60B3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusinessLogic", "BusinessLogic\BusinessLogic.csproj", "{E0E85099-EDE5-48C1-B172-F5BC8734FB6D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{4BE1AA45-9E2A-4FA8-86AE-9695FF27A0AF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusinessLogin.Tests", "Tests\BusinessLogin.Tests\BusinessLogin.Tests.csproj", "{52BBDE2D-FDF4-4EF8-912B-58C913019458}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +24,16 @@ Global
 		{C4FB1FB1-4DDE-4867-8447-E9D7267B60B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C4FB1FB1-4DDE-4867-8447-E9D7267B60B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C4FB1FB1-4DDE-4867-8447-E9D7267B60B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0E85099-EDE5-48C1-B172-F5BC8734FB6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0E85099-EDE5-48C1-B172-F5BC8734FB6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0E85099-EDE5-48C1-B172-F5BC8734FB6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0E85099-EDE5-48C1-B172-F5BC8734FB6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{52BBDE2D-FDF4-4EF8-912B-58C913019458}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52BBDE2D-FDF4-4EF8-912B-58C913019458}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52BBDE2D-FDF4-4EF8-912B-58C913019458}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52BBDE2D-FDF4-4EF8-912B-58C913019458}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{52BBDE2D-FDF4-4EF8-912B-58C913019458} = {4BE1AA45-9E2A-4FA8-86AE-9695FF27A0AF}
 	EndGlobalSection
 EndGlobal
