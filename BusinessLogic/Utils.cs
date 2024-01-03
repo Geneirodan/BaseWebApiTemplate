@@ -10,3 +10,9 @@ public static class Utils
             ? Result.Ok() 
             : Result.Fail(result.Errors.Select(x => x.Description));
 }
+public class Reason(string message) : IReason
+{
+
+    public string Message { get; } = message;
+    public Dictionary<string, object> Metadata { get; } = [];
+}

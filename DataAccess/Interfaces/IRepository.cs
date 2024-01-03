@@ -4,23 +4,27 @@ using System.Linq.Expressions;
 
 namespace DataAccess.Interfaces;
 
-public interface IRepository<TEntity, TKey> where TEntity : class, IEntity<TKey>
+public interface IRepository<TEntity, in TKey> where TEntity : class, IEntity<TKey>
 {
-    Task<TEntity?> GetAsync(string id);
+    public Task<TEntity?> GetAsync(TKey id);
+    
+    public Task<TEntity?> GetAsync(Expression<Func<TEntity, bool>> expression);
 
-    Task<IQueryable<TEntity>> GetAllAsync(PaginationFilterBase filter);
+    public Task<IQueryable<TEntity>> FindAsync(PaginationFilterBase filter);
+    
+    public Task<IQueryable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> expression);
 
-    Task<TEntity> AddAsync(TEntity entity);
+    public Task<TEntity> AddAsync(TEntity entity);
 
-    Task AddRangeAsync(IEnumerable<TEntity> entities);
+    public Task AddRangeAsync(IEnumerable<TEntity> entities);
 
-    Task<IQueryable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> expression);
+    public void Update(TEntity entity);
 
-    void Update(TEntity entity);
+    public void UpdateRange(IEnumerable<TEntity> entities);
 
-    void Remove(TEntity entity);
+    public void Remove(TEntity entity);
 
-    void RemoveRange(IEnumerable<TEntity> entities);
+    public void RemoveRange(IEnumerable<TEntity> entities);
 
-    Task<int> ConfirmAsync();
+    public Task<int> ConfirmAsync();
 }

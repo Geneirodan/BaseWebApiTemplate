@@ -59,4 +59,22 @@ public class MockHelpers
         options.Setup(o => o.Value).Returns(adminOptions);
         return options;
     }
+    
+    public static Mock<IOptions<IdentityOptions>> TestIdentityOptions()
+    {
+        var identityOptions = new IdentityOptions()
+        {
+            Password =
+            {
+                RequireDigit = true,
+                RequiredLength = 6,
+                RequireLowercase = true,
+                RequireUppercase = true,
+                RequireNonAlphanumeric = true
+            }
+        };
+        var options = new Mock<IOptions<IdentityOptions>>();
+        options.Setup(o => o.Value).Returns(identityOptions);
+        return options;
+    }
 }

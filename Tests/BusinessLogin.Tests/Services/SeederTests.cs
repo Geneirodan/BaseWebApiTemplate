@@ -6,7 +6,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Moq;
 
-namespace BusinessLogin.Tests;
+namespace BusinessLogin.Tests.Services;
 
 public class SeederTests
 {
@@ -122,5 +122,4 @@ public class SeederTests
             x => x.CreateAsync(It.Is<Role>(y => Roles.AllowedRoles.Contains(y.Name))),
             Times.Exactly(Roles.AllowedRoles.Length - 1));
     }
-
 }
