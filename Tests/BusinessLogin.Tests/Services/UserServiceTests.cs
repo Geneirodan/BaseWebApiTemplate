@@ -4,15 +4,15 @@ using BusinessLogic.Models;
 using BusinessLogic.Models.Filters;
 using BusinessLogic.Services;
 using BusinessLogic.Validation.Password;
+using BusinessLogin.Tests.Data;
 using DataAccess.Entities;
-using DataAccess.Repositories;
+using DataAccess.Interfaces;
 using FluentAssertions;
 using FluentResults;
 using JetBrains.Annotations;
 using Mapster;
 using Microsoft.AspNetCore.Identity;
 using Moq;
-using System.Linq.Expressions;
 
 // ReSharper disable UseCollectionExpression
 
@@ -26,14 +26,9 @@ public class UserServiceTests
     private readonly Mock<UserManager<User>> _userManager;
     private readonly IdentityOptions _options;
 
-    private readonly IQueryable<User> _users = new List<User>
-    {
-        new() { Id = "1", UserName = "ABC", Email = "email1@gmail.com" },
-        new() { Id = "2", UserName = "DEF", Email = "email2@gmail.com" },
-        new() { Id = "3", UserName = "GHI", Email = "email3@gmail.com" }
-    }.AsQueryable();
+    
 
-    private IQueryable<string> ValidIds => _users.Select(x => x.Id);
+    internal static readonly RegisterModel validRegisterModel = new("ABC", "email@gmail.com", "1String!");
 
     public static TheoryData<string> Ids => new() { "0", "1", "2", "3", "4", "5" };
 
@@ -46,7 +41,6 @@ public class UserServiceTests
 
     public UserServiceTests()
     {
-        var adminOptions = MockHelpers.TestAdminOptions().Object.Value;
         var options = MockHelpers.TestIdentityOptions().Object;
 
         _options = options.Value;
@@ -73,7 +67,7 @@ public class UserServiceTests
     [Theory, MemberData(nameof(UserFilters))]
     public async void GetUsersAsync(UserFilter filter)
     {
-        var users = _users.ApplyFilter(filter);
+        var users = Users.usersTable.ApplyFilter(filter);
         _repository.Setup(x => x.FindAsync(filter)).ReturnsAsync(users);
 
         var result = await _userService.GetUsersAsync(filter);
@@ -86,15 +80,15 @@ public class UserServiceTests
     [Theory, MemberData(nameof(Ids))]
     public async void GetUserByIdAsync(string id)
     {
-        var user = _users.FirstOrDefault(x => x.Id == id);
+        var user = Users.usersTable.FirstOrDefault(x => x.Id == id);
         _repository.Setup(x => x.GetAsync(id)).ReturnsAsync(user);
 
         var result = await _userService.GetUserByIdAsync(id);
 
-        if (ValidIds.Contains(id))
+        if (Users.ValidIds.Contains(id))
         {
             result.IsSuccess.Should().BeTrue();
-            result.Value.Should().BeEquivalentTo(user.Adapt<UserViewModel>());
+            result.ValueOrDefault.Should().BeEquivalentTo(user.Adapt<UserViewModel>());
         }
         else
         {
@@ -131,8 +125,8 @@ public class UserServiceTests
     [Theory, MemberData(nameof(Ids))]
     public async void PatchUserAsync_Id(string id)
     {
-        var validIds = _users.Select(x => x.Id);
-        var user = _users.FirstOrDefault(x => x.Id == id);
+        var validIds = Users.usersTable.Select(x => x.Id);
+        var user = Users.usersTable.FirstOrDefault(x => x.Id == id);
 
         _repository.Setup(x => x.GetAsync(id)).ReturnsAsync(user);
         _repository.Setup(x => x.ConfirmAsync()).ReturnsAsync(1);
@@ -156,7 +150,7 @@ public class UserServiceTests
     public async void PatchUserAsync_NotAbleToSaveChanges()
     {
         const string id = "1";
-        var user = _users.FirstOrDefault(x => x.Id == id);
+        var user = Users.usersTable.FirstOrDefault(x => x.Id == id);
         _repository.Setup(x => x.GetAsync(id)).ReturnsAsync(user);
         _repository.Setup(x => x.ConfirmAsync()).ReturnsAsync(0);
 
@@ -170,15 +164,13 @@ public class UserServiceTests
     [Theory, MemberData(nameof(Ids))]
     public async void DeleteUserAsync(string id)
     {
-        ;
-        var validIds = _users.Select(x => x.Id);
-        var user = _users.FirstOrDefault(x => x.Id == id);
+        var user = Users.usersTable.FirstOrDefault(x => x.Id == id);
         _repository.Setup(x => x.GetAsync(id)).ReturnsAsync(user);
         _repository.Setup(x => x.ConfirmAsync()).ReturnsAsync(1);
 
         var result = await _userService.DeleteUserAsync(id);
 
-        if (validIds.Contains(id))
+        if (Users.ValidIds.Contains(id))
         {
             result.IsSuccess.Should().BeTrue();
             _repository.Verify(x => x.ConfirmAsync(), Times.Once);
@@ -194,7 +186,7 @@ public class UserServiceTests
     public async void DeleteUserAsync_NotAbleToSaveChanges()
     {
         const string id = "1";
-        var user = _users.FirstOrDefault(x => x.Id == id);
+        var user = Users.usersTable.FirstOrDefault(x => x.Id == id);
         _repository.Setup(x => x.GetAsync(id)).ReturnsAsync(user);
         _repository.Setup(x => x.ConfirmAsync()).ReturnsAsync(0);
 
@@ -205,16 +197,16 @@ public class UserServiceTests
         result.Errors.Should().ContainEquivalentOf(new Error("Unable to save changes while deleting user"));
     }
 
-    public static TheoryData<UserCreateModel> UserCreateModels =>
+    public static TheoryData<RegisterModel> UserCreateModels =>
         new()
         {
-            new UserCreateModel("", "", ""),
-            new UserCreateModel("1", "1", "1"),
-            new UserCreateModel("123456789012345678901", "string", "string")
+            new RegisterModel("", "", ""),
+            new RegisterModel("1", "1", "1"),
+            new RegisterModel("123456789012345678901", "string", "string")
         };
 
     [Theory, MemberData(nameof(UserCreateModels))]
-    public async void CreateUserAsync_ModelNotValid(UserCreateModel model)
+    public async void CreateUserAsync_ModelNotValid(RegisterModel model)
     {
         var result = await _userService.CreateUserAsync(model, Roles.User);
         var (userName, email, password) = model;
@@ -227,11 +219,11 @@ public class UserServiceTests
             ? new Error("\'User Name\' must not be empty.")
             : new Error($"\'User Name\' must be between 3 and 20 characters. You entered {userName.Length} characters."));
 
-        errorsShould.ContainEquivalentOf(password.Length == 0
+        errorsShould.ContainEquivalentOf(email.Length == 0
             ? new Error("\'Email\' must not be empty.")
             : new Error("\'Email\' is not a valid email address."));
 
-        if (email.Length == 0)
+        if (password.Length == 0)
             errorsShould.ContainEquivalentOf(new Error("\'Password\' must not be empty."));
         else
         {
@@ -254,7 +246,7 @@ public class UserServiceTests
     public async void CreateUserAsync_RoleNotAllowed()
     {
         const string notAllowedRole = "Some role";
-        var result = await _userService.CreateUserAsync(new UserCreateModel("UserName", "email@gmail.com", "1String!"), notAllowedRole);
+        var result = await _userService.CreateUserAsync(validRegisterModel, notAllowedRole);
 
         result.IsSuccess.Should().BeFalse();
         result.Errors.Should().ContainEquivalentOf(new Error($"The role {notAllowedRole} is not allowed"));
@@ -264,13 +256,12 @@ public class UserServiceTests
     [Fact]
     public async void CreateUserAsync()
     {
-        var createModel = new UserCreateModel("ABC", "email@gmail.com", "1String!");
-        var result = await _userService.CreateUserAsync(createModel, Roles.User);
+        var result = await _userService.CreateUserAsync(validRegisterModel, Roles.User);
 
         result.IsSuccess.Should().BeTrue();
-        result.ValueOrDefault.Should().NotBeNullOrEmpty();
+        result.ValueOrDefault.Should().NotBeNull();
 
-        var (userName, _, password) = createModel;
+        var (userName, _, password) = validRegisterModel;
         _userManager.Verify(x => x.CreateAsync(It.Is<User>(u => u.UserName == userName), password), Times.Once());
         _userManager.Verify(x => x.AddToRoleAsync(It.Is<User>(u => u.UserName == userName), Roles.User), Times.Once());
     }
@@ -283,14 +274,13 @@ public class UserServiceTests
             .Setup(x => x.CreateAsync(It.IsAny<User>(), It.IsAny<string>()))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError()));
 
-        var createModel = new UserCreateModel("ABC", "email@gmail.com", "1String!");
-        var result = await _userService.CreateUserAsync(createModel, Roles.User);
+        var result = await _userService.CreateUserAsync(validRegisterModel, Roles.User);
 
         result.IsSuccess.Should().BeFalse();
-        var (userName, _, password) = createModel;
+        var (userName, _, password) = validRegisterModel;
         _userManager.Verify(x => x.CreateAsync(It.Is<User>(u => u.UserName == userName), password), Times.Once());
         _userManager.Verify(x => x.AddToRoleAsync(It.Is<User>(u => u.UserName == userName), Roles.User), Times.Never());
-        result.ValueOrDefault.Should().BeEquivalentTo(null);
+        result.ValueOrDefault.Should().BeEquivalentTo(null as UserViewModel);
     }
     
     [Fact]
@@ -299,14 +289,13 @@ public class UserServiceTests
         _userManager
             .Setup(x => x.AddToRoleAsync(It.IsAny<User>(), Roles.User))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError()));
-    
-        var createModel = new UserCreateModel("ABC", "email@gmail.com", "1String!");
-        var result = await _userService.CreateUserAsync(createModel, Roles.User);
+
+        var result = await _userService.CreateUserAsync(validRegisterModel, Roles.User);
     
         result.IsSuccess.Should().BeFalse();
-        var (userName, _, password) = createModel;
+        var (userName, _, password) = validRegisterModel;
         _userManager.Verify(x => x.CreateAsync(It.Is<User>(u => u.UserName == userName), password), Times.Once());
         _userManager.Verify(x => x.AddToRoleAsync(It.Is<User>(u => u.UserName == userName), Roles.User), Times.Once());
-        result.ValueOrDefault.Should().BeEquivalentTo(null);
+        result.ValueOrDefault.Should().BeEquivalentTo(null as UserViewModel);
     }
 }

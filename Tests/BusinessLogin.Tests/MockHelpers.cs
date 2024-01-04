@@ -37,13 +37,14 @@ public class MockHelpers
         return userManager;
     }
 
-    public static Mock<SignInManager<TUser>> TestSignInManager<TUser>() where TUser : class =>
+    public static Mock<SignInManager<TUser>> TestSignInManager<TUser>() where TUser : IdentityUser =>
         new(TestUserManager<TUser>().Object,
-            new HttpContextAccessor(),
+            new Mock<IHttpContextAccessor>().Object,
             new Mock<IUserClaimsPrincipalFactory<TUser>>().Object,
             new Mock<IOptions<IdentityOptions>>().Object,
             new Mock<ILogger<SignInManager<TUser>>>().Object,
-            new Mock<Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider>().Object);
+            new Mock<Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider>().Object,
+            new Mock<IUserConfirmation<TUser>>().Object);
 
     public static Mock<RoleManager<TRole>> TestRoleManager<TRole>() where TRole : class =>
         new(new Mock<IRoleStore<TRole>>().Object, null!, null!, null!, null!);
