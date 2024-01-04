@@ -1,8 +1,10 @@
+using BusinessLogic.Interfaces;
 using BusinessLogic.Models;
 using BusinessLogic.Models.Filters;
 using BusinessLogic.Validation;
 using BusinessLogic.Validation.Extensions;
 using DataAccess.Entities;
+using DataAccess.Interfaces;
 using DataAccess.Repositories;
 using FluentResults;
 using Mapster;
@@ -11,12 +13,12 @@ using Microsoft.Extensions.Options;
 
 namespace BusinessLogic.Services;
 
-public class UserService(IUserRepository repository, UserManager<User> userManager, IOptions<IdentityOptions> options)
+public class UserService(IUserRepository repository, UserManager<User> userManager, IOptions<IdentityOptions> options) : IUserService
 {
 
-    public async Task<Result<string>> CreateUserAsync(UserCreateModel model, string role)
+    public async Task<Result<UserViewModel>> CreateUserAsync(RegisterModel model, string role)
     {
-        var validationResult = await new UserCreateValidator(options).ValidateAsync(model);
+        var validationResult = await new RegisterValidator(options).ValidateAsync(model);
 
         if (!validationResult.IsValid)
             return validationResult.ToFluentResult();
@@ -27,15 +29,18 @@ public class UserService(IUserRepository repository, UserManager<User> userManag
         var user = model.Adapt<User>();
 
         var identityResult = await userManager.CreateAsync(user, model.Password);
-        
+
         if (!identityResult.Succeeded)
             return identityResult.ToFluentResult();
+
+        var roleResult = await userManager.AddToRoleAsync(user, Roles.User);
+
+        if (!roleResult.Succeeded)
+            return roleResult.ToFluentResult();
         
-        identityResult = await userManager.AddToRoleAsync(user, role);
+        var userViewModel = user.Adapt<UserViewModel>();
         
-        return identityResult.Succeeded
-            ? Result.Ok(user.Id)
-            : identityResult.ToFluentResult();
+        return Result.Ok(userViewModel);
     }
 
     public async Task<Result> DeleteUserAsync(string id)
@@ -75,7 +80,7 @@ public class UserService(IUserRepository repository, UserManager<User> userManag
     public async Task<Result<UserViewModel>> PatchUserAsync(string id, UserPatchModel model)
     {
         var validationResult = await new PatchValidator().ValidateAsync(model);
-        
+
         if (!validationResult.IsValid)
             return validationResult.ToFluentResult();
 
@@ -87,7 +92,7 @@ public class UserService(IUserRepository repository, UserManager<User> userManag
         model.Adapt(user);
 
         repository.Update(user);
-        
+
         return await repository.ConfirmAsync() > 0
             ? Result.Ok(user.Adapt<UserViewModel>())
             : Result.Fail("Unable to save changes while patching user");

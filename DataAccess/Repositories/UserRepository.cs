@@ -1,24 +1,27 @@
-using AutoFilterer.Types;
 using DataAccess.Entities;
-using System.Linq.Expressions;
+using DataAccess.Interfaces;
 
 namespace DataAccess.Repositories;
 
-public interface IUserRepository
-{
-    Task<User> AddAsync(User entity);
-    Task AddRangeAsync(IEnumerable<User> entities);
-    Task<IQueryable<User>> FindAsync(Expression<Func<User, bool>> expression);
-    Task<IQueryable<User>> FindAsync(PaginationFilterBase filter);
-    Task<User?> GetAsync(Expression<Func<User, bool>> expression);
-    Task<User?> GetAsync(string id);
-    void Remove(User entity);
-    void RemoveRange(IEnumerable<User> entities);
-    void Update(User entity);
-    void UpdateRange(IEnumerable<User> entities);
-    Task<int> ConfirmAsync();
-}
-
 public class UserRepository(ApplicationContext context) : Repository<User, string>(context), IUserRepository
 {
+    public async Task<bool> AddRefreshToken(string id, string token)
+    {
+        var user = await GetAsync(id);
+        if (user is null)
+            return false;
+        
+        user.RefreshTokens.Add(new RefreshToken { Token = token });
+        return true;
+    }
+    
+    public async Task<bool> DeleteRefreshToken(string id, string token)
+    {
+        var user = await GetAsync(id);
+        var refreshToken = user?.RefreshTokens.FirstOrDefault(x => x.Token == token);
+        if (refreshToken == null)
+            return false;
+        user!.RefreshTokens.Remove(refreshToken);
+        return true;
+    }
 }

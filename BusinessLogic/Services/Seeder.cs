@@ -1,3 +1,4 @@
+using BusinessLogic.Interfaces;
 using BusinessLogic.Options;
 using DataAccess.Entities;
 using FluentResults;
@@ -6,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace BusinessLogic.Services;
 
-public class Seeder(UserManager<User> userManager, RoleManager<Role> roleManager, IOptions<AdminOptions> options)
+public class Seeder(UserManager<User> userManager, RoleManager<Role> roleManager, IOptions<AdminOptions> options) : ISeeder
 {
     private readonly AdminOptions _options = options.Value;
 
