@@ -1,5 +1,6 @@
 using AutoFilterer.Extensions;
 using BusinessLogic;
+using BusinessLogic.Models;
 using BusinessLogic.Models.Auth;
 using BusinessLogic.Models.Filters;
 using BusinessLogic.Models.User;
@@ -13,6 +14,7 @@ using FluentResults;
 using JetBrains.Annotations;
 using Mapster;
 using Microsoft.AspNetCore.Identity;
+using MockQueryable.Moq;
 using Moq;
 
 // ReSharper disable UseCollectionExpression
@@ -27,7 +29,6 @@ public class UserServiceTests
     private readonly Mock<UserManager<User>> _userManager;
     private readonly IdentityOptions _options;
 
-    
 
     internal static readonly RegisterModel validRegisterModel = new("ABC", "email@gmail.com", "1String!");
 
@@ -69,13 +70,13 @@ public class UserServiceTests
     public async void GetUsersAsync(UserFilter filter)
     {
         var users = UserData.usersTable.ApplyFilter(filter);
-        _repository.Setup(x => x.FindAsync(filter)).ReturnsAsync(users);
+        _repository.Setup(x => x.GetAll()).Returns(users.BuildMockDbSet().Object);
 
         var result = await _userService.GetUsersAsync(filter);
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEquivalentTo(users.Adapt<IEnumerable<UserViewModel>>());
-        _repository.Verify(x => x.FindAsync(filter), Times.Once);
+        result.Value.Should().BeEquivalentTo(new PaginationModel<UserViewModel>(users.Adapt<IEnumerable<UserViewModel>>(), users.Count()));
+        _repository.Verify(x => x.GetAll(), Times.Once);
     }
 
     [Theory, MemberData(nameof(Ids))]
@@ -252,7 +253,7 @@ public class UserServiceTests
         _userManager.Verify(x => x.AddToRoleAsync(It.Is<User>(u => u.UserName == userName), Roles.User), Times.Never());
         result.ValueOrDefault.Should().BeEquivalentTo(null as UserViewModel);
     }
-    
+
     [Fact]
     public async void CreateUserAsync_UnableToAddToRole()
     {
@@ -261,7 +262,7 @@ public class UserServiceTests
             .ReturnsAsync(IdentityResult.Failed(new IdentityError()));
 
         var result = await _userService.CreateUserAsync(validRegisterModel, Roles.User);
-    
+
         result.IsSuccess.Should().BeFalse();
         var (userName, _, password) = validRegisterModel;
         _userManager.Verify(x => x.CreateAsync(It.Is<User>(u => u.UserName == userName), password), Times.Once());

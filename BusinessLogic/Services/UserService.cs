@@ -1,3 +1,4 @@
+using AutoFilterer.Extensions;
 using BusinessLogic.Interfaces;
 using BusinessLogic.Models;
 using BusinessLogic.Models.Auth;
@@ -7,10 +8,10 @@ using BusinessLogic.Validation;
 using BusinessLogic.Validation.Extensions;
 using DataAccess.Entities;
 using DataAccess.Interfaces;
-using DataAccess.Repositories;
 using FluentResults;
 using Mapster;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace BusinessLogic.Services;
@@ -39,9 +40,9 @@ public class UserService(IUserRepository repository, UserManager<User> userManag
 
         if (!roleResult.Succeeded)
             return roleResult.ToFluentResult();
-        
+
         var userViewModel = user.Adapt<UserViewModel>();
-        
+
         return Result.Ok(userViewModel);
     }
 
@@ -70,13 +71,13 @@ public class UserService(IUserRepository repository, UserManager<User> userManag
         return Result.Ok(viewModel);
     }
 
-    public async Task<Result<IEnumerable<UserViewModel>>> GetUsersAsync(UserFilter filter)
+    public async Task<Result<PaginationModel<UserViewModel>>> GetUsersAsync(UserFilter filter)
     {
-        var users = await repository.FindAsync(filter);
+        var users = repository.GetAll().ApplyFilterWithoutPagination(filter);
+        var paged = await users.ToPaged(filter.Page, filter.PerPage).ToListAsync();
+        var viewModels = paged.Adapt<IEnumerable<UserViewModel>>();
 
-        var viewModels = users.Adapt<IEnumerable<UserViewModel>>();
-
-        return Result.Ok(viewModels);
+        return Result.Ok(new PaginationModel<UserViewModel>(viewModels, users.Count()));
     }
 
     public async Task<Result<UserViewModel>> PatchUserAsync(string id, UserPatchModel model)

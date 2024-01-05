@@ -1,5 +1,3 @@
-using AutoFilterer.Extensions;
-using AutoFilterer.Types;
 using DataAccess.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -10,19 +8,16 @@ public abstract class Repository<TEntity, TKey>(ApplicationContext context) : IR
     where TEntity : class, IEntity<TKey>
 {
     // ReSharper disable once MemberCanBePrivate.Global
-    protected ApplicationContext Context { get; } = context;
+    protected ApplicationContext Context => context;
 
     private DbSet<TEntity> Entities => Context.Set<TEntity>();
 
+    public IQueryable<TEntity> GetAll() => Entities;
     public async Task<TEntity> AddAsync(TEntity entity) => (await Entities.AddAsync(entity)).Entity;
 
     public Task AddRangeAsync(IEnumerable<TEntity> entities) => Entities.AddRangeAsync(entities);
 
-    public Task<IQueryable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> expression) => Task.FromResult(Entities.Where(expression));
-
     public Task<TEntity?> GetAsync(Expression<Func<TEntity, bool>> expression) => Entities.FirstOrDefaultAsync(expression);
-    
-    public Task<IQueryable<TEntity>> FindAsync(PaginationFilterBase filter) => Task.FromResult(Entities.ApplyFilter(filter));
 
     public async Task<TEntity?> GetAsync(TKey id) => await Entities.FindAsync(id);
 

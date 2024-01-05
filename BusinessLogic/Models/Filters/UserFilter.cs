@@ -1,7 +1,6 @@
 using AutoFilterer.Attributes;
 using AutoFilterer.Enums;
 using AutoFilterer.Types;
-using Microsoft.AspNetCore.Mvc;
 
 namespace BusinessLogic.Models.Filters;
 

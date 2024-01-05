@@ -1,5 +1,3 @@
-using AutoFilterer.Types;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System.Linq.Expressions;
 
 namespace DataAccess.Interfaces;
@@ -10,9 +8,7 @@ public interface IRepository<TEntity, in TKey> where TEntity : class, IEntity<TK
     
     public Task<TEntity?> GetAsync(Expression<Func<TEntity, bool>> expression);
 
-    public Task<IQueryable<TEntity>> FindAsync(PaginationFilterBase filter);
-    
-    public Task<IQueryable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> expression);
+    public IQueryable<TEntity> GetAll();
 
     public Task<TEntity> AddAsync(TEntity entity);
 
