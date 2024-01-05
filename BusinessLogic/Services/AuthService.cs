@@ -1,5 +1,7 @@
 using BusinessLogic.Interfaces;
 using BusinessLogic.Models;
+using BusinessLogic.Models.Auth;
+using BusinessLogic.Models.User;
 using BusinessLogic.Options;
 using BusinessLogic.Validation;
 using BusinessLogic.Validation.Extensions;

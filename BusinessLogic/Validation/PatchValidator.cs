@@ -1,4 +1,5 @@
 using BusinessLogic.Models;
+using BusinessLogic.Models.User;
 using BusinessLogic.Validation.Extensions;
 using FluentValidation;
 

@@ -1,10 +1,11 @@
 using BusinessLogic;
 using BusinessLogic.Interfaces;
-using BusinessLogic.Models;
+using BusinessLogic.Models.Auth;
+using BusinessLogic.Models.User;
 using BusinessLogic.Options;
 using BusinessLogic.Services;
-using BusinessLogic.Validation.Password;
 using BusinessLogin.Tests.Data;
+using BusinessLogin.Tests.Extensions;
 using DataAccess.Entities;
 using FluentAssertions;
 using FluentResults;
@@ -32,16 +33,16 @@ public class AuthServiceTests
 
         _userManager
             .Setup(x => x.FindByNameAsync(It.IsAny<string>()))
-            .ReturnsAsync(User);
+            .ReturnsAsync(UserData.sampleUser);
         _userManager
             .Setup(x => x.FindByIdAsync(It.IsAny<string>()))
-            .ReturnsAsync(User);
+            .ReturnsAsync(UserData.sampleUser);
         _userManager
             .Setup(x => x.ConfirmEmailAsync(It.IsAny<User>(), It.IsAny<string>()))
             .ReturnsAsync(IdentityResult.Success);
         _userManager
             .Setup(x => x.GenerateEmailConfirmationTokenAsync(It.IsAny<User>()))
-            .ReturnsAsync(ValidToken);
+            .ReturnsAsync(UserData.ValidToken);
 
 
         _signInManager = MockHelpers.TestSignInManager<User>();
@@ -52,7 +53,7 @@ public class AuthServiceTests
 
         _tokenService = new Mock<ITokenService>();
 
-        _tokenService.Setup(x => x.CreateTokens(It.IsAny<string>(), It.IsAny<string?>())).Returns(Result.Ok(Users.tokens));
+        _tokenService.Setup(x => x.CreateTokens(It.IsAny<string>(), It.IsAny<string?>())).Returns(Result.Ok(UserData.tokens));
 
         _mailService = new Mock<IMailService>();
 
@@ -64,7 +65,7 @@ public class AuthServiceTests
 
         userService
             .Setup(x => x.CreateUserAsync(UserServiceTests.validRegisterModel, Roles.User))
-            .ReturnsAsync(Result.Ok(User.Adapt<UserViewModel>()));
+            .ReturnsAsync(Result.Ok(UserData.sampleUser.Adapt<UserViewModel>()));
 
         var options = MockHelpers.TestIdentityOptions().Object;
         _options = options.Value;
@@ -81,22 +82,12 @@ public class AuthServiceTests
             googleOptions.Object,
             userService.Object);
     }
-    private static User User => new() { Id = "1", UserName = "name", Email = "email" };
 
     public static readonly TheoryData<LoginModel> invalidLoginModels =
         new()
         {
             new LoginModel("", "")
         };
-
-    public static readonly TheoryData<LoginModel> validLoginModels =
-        new()
-        {
-            new LoginModel("test", "1String!"),
-            new LoginModel("ABC", "1String!"),
-            new LoginModel("email1@gmail.com", "1String!")
-        };
-
 
     [Theory, MemberData(nameof(invalidLoginModels))]
     public async void Login_ModelIsNotValid(LoginModel model)
@@ -106,39 +97,30 @@ public class AuthServiceTests
 
         result.IsSuccess.Should().BeFalse();
 
-        var errorsShould = result.Errors.Should();
-
-        errorsShould.ContainEquivalentOf(userName.Length == 0
+        result.Errors.Should().ContainEquivalentOf(userName.Length == 0
             ? new Error("\'User Name\' must not be empty.")
             : new Error($"\'User Name\' must be between 3 and 20 characters. You entered {userName.Length} characters."));
 
-        if (password.Length == 0)
-            errorsShould.ContainEquivalentOf(new Error("\'Password\' must not be empty."));
-        else
-        {
-            if (_options.Password.RequireDigit && !password.Any(x => x is < '0' or > '9'))
-                errorsShould.ContainEquivalentOf(new Error(PasswordValidationErrors.RequireDigit));
-
-            if (_options.Password.RequireLowercase && !password.Any(x => x is < 'a' or > 'z'))
-                errorsShould.ContainEquivalentOf(new Error(PasswordValidationErrors.RequireLowercase));
-
-            if (_options.Password.RequireUppercase && !password.Any(x => x is < 'A' or > 'Z'))
-                errorsShould.ContainEquivalentOf(new Error(PasswordValidationErrors.RequireUppercase));
-
-            if (_options.Password.RequireNonAlphanumeric && password.All(x => x is > '0' and < '9' or > 'a' and < 'z' or > 'A' and < 'Z'))
-                errorsShould.ContainEquivalentOf(new Error(PasswordValidationErrors.RequireNonAlphanumeric));
-        }
+        result.Errors.TestPasswordValidationResult(password, _options);
     }
+    
 
+    public static readonly TheoryData<LoginModel> validLoginModels =
+        new()
+        {
+            new LoginModel("test", "1String!"),
+            new LoginModel("ABC", "1String!"),
+            new LoginModel("email1@gmail.com", "1String!")
+        };
     [Theory, MemberData(nameof(validLoginModels))]
     public async void Login_Failed(LoginModel model)
     {
         var (userName, password) = model;
-        var user = Users.usersTable.FirstOrDefault(x => x.UserName == userName || x.Email == userName);
+        var user = UserData.usersTable.FirstOrDefault(x => x.UserName == userName || x.Email == userName);
         _userManager.Setup(x => x.FindByNameAsync(userName))
-            .ReturnsAsync(Users.usersTable.FirstOrDefault(x => x.UserName == userName));
+            .ReturnsAsync(UserData.usersTable.FirstOrDefault(x => x.UserName == userName));
         _userManager.Setup(x => x.FindByEmailAsync(userName))
-            .ReturnsAsync(Users.usersTable.FirstOrDefault(x => x.Email == userName));
+            .ReturnsAsync(UserData.usersTable.FirstOrDefault(x => x.Email == userName));
         _signInManager
             .Setup(x => x.PasswordSignInAsync(
                 It.Is<User>(y => y.UserName == userName || y.Email == userName),
@@ -165,7 +147,7 @@ public class AuthServiceTests
         var result = await _authService.LoginAsync(model);
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEquivalentTo(Users.tokens);
+        result.Value.Should().BeEquivalentTo(UserData.tokens);
     }
 
     [Fact]
@@ -180,39 +162,26 @@ public class AuthServiceTests
 
     }
 
-    public static readonly TheoryData<RegisterModel> invalidRegisterModels =
-        new()
-        {
-            new RegisterModel("test", "new@mail.com", "!String1"),
-            new RegisterModel("ABC", "email1@gmail.com", "1String!"),
-            new RegisterModel("DEF", "email1@gmail.com", "1String!"),
-            new RegisterModel("DEFf", "email2@gmail.com", "1String!"),
-        };
-
-    private const string ValidToken = "valid token";
-    private const string InvalidToken = "invalid token";
-
     public static readonly TheoryData<ConfirmEmailModel> confirmEmailModels =
         new()
         {
-            new ConfirmEmailModel("0", ValidToken),
-            new ConfirmEmailModel("0", InvalidToken),
-            new ConfirmEmailModel("1", ValidToken),
-            new ConfirmEmailModel("1", InvalidToken)
+            new ConfirmEmailModel("0", UserData.ValidToken),
+            new ConfirmEmailModel("0", UserData.InvalidToken),
+            new ConfirmEmailModel("1", UserData.ValidToken),
+            new ConfirmEmailModel("1", UserData.InvalidToken)
         };
-
 
     [Theory, MemberData(nameof(confirmEmailModels))]
     public async void ConfirmEmailAsync(ConfirmEmailModel model)
     {
         var (userId, token) = model;
-        var user = Users.usersTable.FirstOrDefault(x => x.Id == userId);
+        var user = UserData.usersTable.FirstOrDefault(x => x.Id == userId);
         _userManager
             .Setup(x => x.FindByIdAsync(userId))
             .ReturnsAsync(user);
         _userManager
             .Setup(x => x.ConfirmEmailAsync(It.IsAny<User>(), token))
-            .ReturnsAsync(token == ValidToken ? IdentityResult.Success : IdentityResult.Failed());
+            .ReturnsAsync(token == UserData.ValidToken ? IdentityResult.Success : IdentityResult.Failed());
 
         var result = await _authService.ConfirmEmailAsync(model);
 
@@ -233,7 +202,7 @@ public class AuthServiceTests
     [Theory, MemberData(nameof(Ids))]
     public async void SendEmailConfirmationAsync(string userId)
     {
-        var user = Users.usersTable.FirstOrDefault(x => x.Id == userId);
+        var user = UserData.usersTable.FirstOrDefault(x => x.Id == userId);
         _userManager
             .Setup(x => x.FindByIdAsync(userId))
             .ReturnsAsync(user);

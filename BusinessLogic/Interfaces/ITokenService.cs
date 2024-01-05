@@ -1,4 +1,5 @@
 using BusinessLogic.Models;
+using BusinessLogic.Models.Auth;
 using FluentResults;
 using System.Security.Claims;
 

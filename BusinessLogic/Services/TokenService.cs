@@ -1,5 +1,6 @@
 using BusinessLogic.Interfaces;
 using BusinessLogic.Models;
+using BusinessLogic.Models.Auth;
 using BusinessLogic.Options;
 using DataAccess.Interfaces;
 using FluentResults;

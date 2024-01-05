@@ -1,10 +1,11 @@
 using AutoFilterer.Extensions;
 using BusinessLogic;
-using BusinessLogic.Models;
+using BusinessLogic.Models.Auth;
 using BusinessLogic.Models.Filters;
+using BusinessLogic.Models.User;
 using BusinessLogic.Services;
-using BusinessLogic.Validation.Password;
 using BusinessLogin.Tests.Data;
+using BusinessLogin.Tests.Extensions;
 using DataAccess.Entities;
 using DataAccess.Interfaces;
 using FluentAssertions;
@@ -67,7 +68,7 @@ public class UserServiceTests
     [Theory, MemberData(nameof(UserFilters))]
     public async void GetUsersAsync(UserFilter filter)
     {
-        var users = Users.usersTable.ApplyFilter(filter);
+        var users = UserData.usersTable.ApplyFilter(filter);
         _repository.Setup(x => x.FindAsync(filter)).ReturnsAsync(users);
 
         var result = await _userService.GetUsersAsync(filter);
@@ -80,12 +81,12 @@ public class UserServiceTests
     [Theory, MemberData(nameof(Ids))]
     public async void GetUserByIdAsync(string id)
     {
-        var user = Users.usersTable.FirstOrDefault(x => x.Id == id);
+        var user = UserData.usersTable.FirstOrDefault(x => x.Id == id);
         _repository.Setup(x => x.GetAsync(id)).ReturnsAsync(user);
 
         var result = await _userService.GetUserByIdAsync(id);
 
-        if (Users.ValidIds.Contains(id))
+        if (UserData.validIds.Contains(id))
         {
             result.IsSuccess.Should().BeTrue();
             result.ValueOrDefault.Should().BeEquivalentTo(user.Adapt<UserViewModel>());
@@ -112,21 +113,15 @@ public class UserServiceTests
         var (userName, email) = model;
 
         result.IsSuccess.Should().BeFalse();
-
-        result.Errors.Should().ContainEquivalentOf(userName.Length == 0
-            ? new Error("\'User Name\' must not be empty.")
-            : new Error($"\'User Name\' must be between 3 and 20 characters. You entered {userName.Length} characters."));
-
-        result.Errors.Should().ContainEquivalentOf(email.Length == 0
-            ? new Error("\'Email\' must not be empty.")
-            : new Error("\'Email\' is not a valid email address."));
+        result.Errors.TestUsernameValidation(userName);
+        result.Errors.TestEmailValidation(email);
     }
 
     [Theory, MemberData(nameof(Ids))]
     public async void PatchUserAsync_Id(string id)
     {
-        var validIds = Users.usersTable.Select(x => x.Id);
-        var user = Users.usersTable.FirstOrDefault(x => x.Id == id);
+        var validIds = UserData.usersTable.Select(x => x.Id);
+        var user = UserData.usersTable.FirstOrDefault(x => x.Id == id);
 
         _repository.Setup(x => x.GetAsync(id)).ReturnsAsync(user);
         _repository.Setup(x => x.ConfirmAsync()).ReturnsAsync(1);
@@ -150,7 +145,7 @@ public class UserServiceTests
     public async void PatchUserAsync_NotAbleToSaveChanges()
     {
         const string id = "1";
-        var user = Users.usersTable.FirstOrDefault(x => x.Id == id);
+        var user = UserData.usersTable.FirstOrDefault(x => x.Id == id);
         _repository.Setup(x => x.GetAsync(id)).ReturnsAsync(user);
         _repository.Setup(x => x.ConfirmAsync()).ReturnsAsync(0);
 
@@ -164,13 +159,13 @@ public class UserServiceTests
     [Theory, MemberData(nameof(Ids))]
     public async void DeleteUserAsync(string id)
     {
-        var user = Users.usersTable.FirstOrDefault(x => x.Id == id);
+        var user = UserData.usersTable.FirstOrDefault(x => x.Id == id);
         _repository.Setup(x => x.GetAsync(id)).ReturnsAsync(user);
         _repository.Setup(x => x.ConfirmAsync()).ReturnsAsync(1);
 
         var result = await _userService.DeleteUserAsync(id);
 
-        if (Users.ValidIds.Contains(id))
+        if (UserData.validIds.Contains(id))
         {
             result.IsSuccess.Should().BeTrue();
             _repository.Verify(x => x.ConfirmAsync(), Times.Once);
@@ -186,7 +181,7 @@ public class UserServiceTests
     public async void DeleteUserAsync_NotAbleToSaveChanges()
     {
         const string id = "1";
-        var user = Users.usersTable.FirstOrDefault(x => x.Id == id);
+        var user = UserData.usersTable.FirstOrDefault(x => x.Id == id);
         _repository.Setup(x => x.GetAsync(id)).ReturnsAsync(user);
         _repository.Setup(x => x.ConfirmAsync()).ReturnsAsync(0);
 
@@ -212,34 +207,9 @@ public class UserServiceTests
         var (userName, email, password) = model;
 
         result.IsSuccess.Should().BeFalse();
-
-        var errorsShould = result.Errors.Should();
-
-        errorsShould.ContainEquivalentOf(userName.Length == 0
-            ? new Error("\'User Name\' must not be empty.")
-            : new Error($"\'User Name\' must be between 3 and 20 characters. You entered {userName.Length} characters."));
-
-        errorsShould.ContainEquivalentOf(email.Length == 0
-            ? new Error("\'Email\' must not be empty.")
-            : new Error("\'Email\' is not a valid email address."));
-
-        if (password.Length == 0)
-            errorsShould.ContainEquivalentOf(new Error("\'Password\' must not be empty."));
-        else
-        {
-            if (_options.Password.RequireDigit && !password.Any(x => x is < '0' or > '9'))
-                errorsShould.ContainEquivalentOf(new Error(PasswordValidationErrors.RequireDigit));
-
-            if (_options.Password.RequireLowercase && !password.Any(x => x is < 'a' or > 'z'))
-                errorsShould.ContainEquivalentOf(new Error(PasswordValidationErrors.RequireLowercase));
-
-            if (_options.Password.RequireUppercase && !password.Any(x => x is < 'A' or > 'Z'))
-                errorsShould.ContainEquivalentOf(new Error(PasswordValidationErrors.RequireUppercase));
-
-            if (_options.Password.RequireNonAlphanumeric && password.All(x => x is > '0' and < '9' or > 'a' and < 'z' or > 'A' and < 'Z'))
-                errorsShould.ContainEquivalentOf(new Error(PasswordValidationErrors.RequireNonAlphanumeric));
-        }
-
+        result.Errors.TestUsernameValidation(userName);
+        result.Errors.TestEmailValidation(email);
+        result.Errors.TestPasswordValidationResult(password, _options);
     }
 
     [Fact]

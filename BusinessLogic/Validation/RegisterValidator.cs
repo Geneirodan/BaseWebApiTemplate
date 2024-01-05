@@ -1,4 +1,5 @@
 using BusinessLogic.Models;
+using BusinessLogic.Models.Auth;
 using BusinessLogic.Validation.Extensions;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;

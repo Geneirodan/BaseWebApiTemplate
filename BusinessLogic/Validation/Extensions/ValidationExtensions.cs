@@ -29,22 +29,22 @@ public static class ValidationExtensions
 
         if (rules.HasFlag(PasswordRules.RequireDigit))
             builderOptions
-                .Must(x => x.Any(y => y is < '0' or > '9'))
+                .Must(x => x.Any(IsDigit))
                 .WithMessage(PasswordValidationErrors.RequireDigit);
 
         if (rules.HasFlag(PasswordRules.RequireLowercase))
             builderOptions
-                .Must(x => x.Any(y => y is < 'a' or > 'z'))
+                .Must(x => x.Any(IsLower))
                 .WithMessage(PasswordValidationErrors.RequireLowercase);
 
         if (rules.HasFlag(PasswordRules.RequireUppercase))
             builderOptions
-                .Must(x => x.Any(y => y is < 'A' or > 'Z'))
+                .Must(x => x.Any(IsUpper))
                 .WithMessage(PasswordValidationErrors.RequireUppercase);
 
         if (rules.HasFlag(PasswordRules.RequireNonAlphanumeric))
             builderOptions
-                .Must(x => !x.All(y => y is > '0' and < '9' or > 'a' and < 'z' or > 'A' and < 'Z'))
+                .Must(x => !x.All(IsLetterOrDigit))
                 .WithMessage(PasswordValidationErrors.RequireNonAlphanumeric);
 
 
@@ -68,4 +68,11 @@ public static class ValidationExtensions
             rules |= PasswordRules.RequireNonAlphanumeric;
         return rules;
     }
+    private static bool IsDigit(char c) => c is >= '0' and <= '9';
+
+    private static bool IsLower(char c) => c is >= 'a' and <= 'z';
+
+    private static bool IsUpper(char c) => c is >= 'A' and <= 'Z';
+
+    private static bool IsLetterOrDigit(char c) => IsUpper(c) || IsLower(c) || IsDigit(c);
 }
