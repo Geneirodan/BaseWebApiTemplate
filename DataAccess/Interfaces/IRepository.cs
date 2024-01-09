@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 
 namespace DataAccess.Interfaces;
 
-public interface IRepository<TEntity, in TKey> where TEntity : class, IEntity<TKey>
+public interface IRepository<TEntity, in TKey> : IRepositoryService where TEntity : class, IEntity<TKey>
 {
     public Task<TEntity?> GetAsync(TKey id);
     
@@ -24,3 +24,5 @@ public interface IRepository<TEntity, in TKey> where TEntity : class, IEntity<TK
 
     public Task<int> ConfirmAsync();
 }
+
+public interface IRepositoryService;

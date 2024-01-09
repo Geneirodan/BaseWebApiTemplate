@@ -7,6 +7,7 @@ using BusinessLogic.Services;
 using BusinessLogin.Tests.Data;
 using BusinessLogin.Tests.Extensions;
 using DataAccess.Entities;
+using DataAccess.Repositories;
 using FluentAssertions;
 using FluentResults;
 using Mapster;
@@ -23,7 +24,6 @@ public class AuthServiceTests
     private readonly AuthService _authService;
     private readonly Mock<UserManager<User>> _userManager;
     private readonly Mock<SignInManager<User>> _signInManager;
-    private readonly Mock<ITokenService> _tokenService;
     private readonly Mock<IMailService> _mailService;
     private readonly IdentityOptions _options;
 
@@ -51,9 +51,9 @@ public class AuthServiceTests
             .Setup(x => x.PasswordSignInAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
             .ReturnsAsync(SignInResult.Success);
 
-        _tokenService = new Mock<ITokenService>();
+        Mock<ITokenService> tokenService = new();
 
-        _tokenService.Setup(x => x.CreateTokens(It.IsAny<string>(), It.IsAny<string?>())).Returns(Result.Ok(UserData.tokens));
+        tokenService.Setup(x => x.CreateTokensAsync(It.IsAny<User>())).ReturnsAsync(UserData.tokens);
 
         _mailService = new Mock<IMailService>();
 
@@ -64,7 +64,7 @@ public class AuthServiceTests
         Mock<IUserService> userService = new();
 
         userService
-            .Setup(x => x.CreateUserAsync(UserServiceTests.validRegisterModel, Roles.User))
+            .Setup(x => x.RegisterUserAsync(UserServiceTests.validRegisterModel, Roles.User, true))
             .ReturnsAsync(Result.Ok(UserData.sampleUser.Adapt<UserViewModel>()));
 
         var options = MockHelpers.TestIdentityOptions().Object;
@@ -73,35 +73,16 @@ public class AuthServiceTests
         var googleOptions = new Mock<IOptions<GoogleAuthOptions>>();
         googleOptions.Setup(o => o.Value).Returns(new GoogleAuthOptions());
 
+        var userRepository = new Mock<IUserRepository>();
         _authService = new AuthService(
             _userManager.Object,
             _signInManager.Object,
-            _tokenService.Object,
+            tokenService.Object,
             _mailService.Object,
             options,
             googleOptions.Object,
+            userRepository.Object,
             userService.Object);
-    }
-
-    public static readonly TheoryData<LoginModel> invalidLoginModels =
-        new()
-        {
-            new LoginModel("", "")
-        };
-
-    [Theory, MemberData(nameof(invalidLoginModels))]
-    public async void Login_ModelIsNotValid(LoginModel model)
-    {
-        var result = await _authService.LoginAsync(model);
-        var (userName, password) = model;
-
-        result.IsSuccess.Should().BeFalse();
-
-        result.Errors.Should().ContainEquivalentOf(userName.Length == 0
-            ? new Error("\'User Name\' must not be empty.")
-            : new Error($"\'User Name\' must be between 3 and 20 characters. You entered {userName.Length} characters."));
-
-        result.Errors.TestPasswordValidationResult(password, _options);
     }
     
 
@@ -150,31 +131,18 @@ public class AuthServiceTests
         result.Value.Should().BeEquivalentTo(UserData.tokens);
     }
 
-    [Fact]
-    public async void Login_UnableToCreateToken()
-    {
-        _tokenService.Setup(x => x.CreateTokens(It.IsAny<string>(), It.IsAny<string?>())).Returns(Result.Fail("Token error"));
-
-        var result = await _authService.LoginAsync(new LoginModel("test", "1String!"));
-
-        result.IsSuccess.Should().BeFalse();
-        result.Errors.Should().ContainEquivalentOf(new Error("Token error"));
-
-    }
-
-    public static readonly TheoryData<ConfirmEmailModel> confirmEmailModels =
+    public static readonly TheoryData<string, string> confirmEmailModels =
         new()
         {
-            new ConfirmEmailModel("0", UserData.ValidToken),
-            new ConfirmEmailModel("0", UserData.InvalidToken),
-            new ConfirmEmailModel("1", UserData.ValidToken),
-            new ConfirmEmailModel("1", UserData.InvalidToken)
+            { "0", UserData.ValidToken },
+            { "0", UserData.InvalidToken },
+            { "1", UserData.ValidToken },
+            { "1", UserData.InvalidToken }
         };
 
     [Theory, MemberData(nameof(confirmEmailModels))]
-    public async void ConfirmEmailAsync(ConfirmEmailModel model)
+    public async void ConfirmEmailAsync(string userId, string token)
     {
-        var (userId, token) = model;
         var user = UserData.usersTable.FirstOrDefault(x => x.Id == userId);
         _userManager
             .Setup(x => x.FindByIdAsync(userId))
@@ -183,7 +151,7 @@ public class AuthServiceTests
             .Setup(x => x.ConfirmEmailAsync(It.IsAny<User>(), token))
             .ReturnsAsync(token == UserData.ValidToken ? IdentityResult.Success : IdentityResult.Failed());
 
-        var result = await _authService.ConfirmEmailAsync(model);
+        var result = await _authService.ConfirmEmailAsync(userId, token);
 
         if (user is null)
         {

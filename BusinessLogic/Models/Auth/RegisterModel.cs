@@ -1,4 +1,5 @@
 using BusinessLogic.Models.Interfaces;
+using BusinessLogic.Models.User;
 
 namespace BusinessLogic.Models.Auth;
 

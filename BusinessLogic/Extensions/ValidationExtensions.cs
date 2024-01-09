@@ -4,15 +4,28 @@ using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Identity;
 
-namespace BusinessLogic.Validation.Extensions;
+namespace BusinessLogic.Extensions;
 
 public static class ValidationExtensions
 {
     public static Result ToFluentResult(this ValidationResult result)
     {
-        List<string> errors = [];
+        List<Error> errors = [];
         if (!result.IsValid)
-            result.Errors.ForEach(e => errors.Add(e.ErrorMessage));
+        {
+            errors = result.Errors.GroupBy(x => x.PropertyName, (s, failures) =>
+            {
+                var e = new Error(s);
+                e.Reasons.AddRange(failures.Select(x => new Error(x.ErrorMessage)));
+                return e;
+            }).ToList();
+            // foreach (var e in result.Errors)
+            // {
+            //     var error = new Error(e.PropertyName);
+            //     error.Reasons.Add(new Error(e.ErrorMessage));
+            //     errors.Add(error);
+            // }
+        }
         return errors.Count > 0
             ? Result.Fail(errors)
             : Result.Ok();
@@ -48,7 +61,7 @@ public static class ValidationExtensions
                 .WithMessage(PasswordValidationErrors.RequireNonAlphanumeric);
 
 
-        return builderOptions.MinimumLength(requiredLength).WithMessage(PasswordValidationErrors.PasswordLength);
+        return builderOptions.MinimumLength(requiredLength);
     }
 
     public static IRuleBuilderOptions<T, string> IsValidPassword<T>(this IRuleBuilderInitial<T, string> ruleBuilder, PasswordOptions passwordOptions) =>

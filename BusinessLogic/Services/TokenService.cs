@@ -1,9 +1,10 @@
 using BusinessLogic.Interfaces;
-using BusinessLogic.Models;
 using BusinessLogic.Models.Auth;
 using BusinessLogic.Options;
+using DataAccess.Entities;
 using DataAccess.Interfaces;
 using FluentResults;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -13,28 +14,29 @@ using System.Text;
 
 namespace BusinessLogic.Services;
 
-public class TokenService(IOptions<JwtOptions> options, IUserRepository userRepository) : ITokenService
+[ScopedService]
+public class TokenService(IOptions<JwtOptions> options, ITokenRepository tokenRepository, UserManager<User> userManager) : ITokenService
 {
     private readonly SymmetricSecurityKey _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Value.Key));
     private readonly int _lifetimeMinutes = options.Value.LifetimeMinutes;
-
-    public async Task<Result> AddRefreshTokenToUser(string id, string token)
+    public async Task<Result<Tokens>> RefreshAsync(Tokens tokens)
     {
-        await userRepository.AddRefreshToken(id, token);
-        return await userRepository.ConfirmAsync() > 0
-            ? Result.Ok()
-            : Result.Fail("Unable to add refresh token");
+        var principal = GetPrincipalFromExpiredToken(tokens.AccessToken);
+        var user = await userManager.GetUserAsync(principal);
+        
+        if(user is null)
+            return Result.Fail(Errors.NotFound);
+        
+        var savedRefreshToken = await tokenRepository.GetSavedRefreshTokensAsync(user.Id, tokens.RefreshToken);
+        
+        if (savedRefreshToken?.Token != tokens.RefreshToken)
+            return Result.Fail(Errors.Forbidden);
+        await tokenRepository.DeleteRefreshTokenAsync(user.Id, tokens.RefreshToken);
+        var newTokens = await CreateTokensAsync(user);
+        return Result.Ok(newTokens);
     }
 
-    public async Task<Result> DeleteRefreshTokenToUser(string id, string token)
-    {
-        await userRepository.DeleteRefreshToken(id, token);
-        return await userRepository.ConfirmAsync() > 0
-            ? Result.Ok()
-            : Result.Fail("Unable to add refresh token");
-    }
-
-    public ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
+    private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
     {
 
         var tokenValidationParameters = new TokenValidationParameters
@@ -58,22 +60,32 @@ public class TokenService(IOptions<JwtOptions> options, IUserRepository userRepo
         return principal;
     }
 
-    public Result<Tokens> CreateTokens(string email, string? userName = null)
+    public async Task<Tokens> CreateTokensAsync(User user)
     {
-        var token = GetAccessToken(email, userName);
+        var token = await GetAccessTokenAsync(user);
         var refreshToken = GetRefreshToken();
-        var tokens = new Tokens(token, refreshToken);
-        return Result.Ok(tokens);
+        var refreshTokenEntity = new RefreshToken
+        {
+            Token = refreshToken,
+            UserId = user.Id
+        };
+        await tokenRepository.AddRefreshTokenAsync(refreshTokenEntity);
+        await tokenRepository.SaveChangesAsync();
+        return new Tokens(token, refreshToken);
     }
-    private string GetAccessToken(string email, string? userName = null)
+    private async Task<string> GetAccessTokenAsync(User user)
     {
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.Name, userName ?? string.Empty),
-            new(ClaimTypes.Email, email),
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
+            new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
+            new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+        var roles = await userManager.GetRolesAsync(user);
+
+        claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {

@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace BusinessLogic.Services;
 
+[ScopedService]
 public class Seeder(UserManager<User> userManager, RoleManager<Role> roleManager, IOptions<AdminOptions> options) : ISeeder
 {
     private readonly AdminOptions _options = options.Value;

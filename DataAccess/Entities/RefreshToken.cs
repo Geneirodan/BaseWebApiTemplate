@@ -1,13 +1,14 @@
-using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
 namespace DataAccess.Entities;
 
-[Owned]
-public class RefreshToken
+public class RefreshToken : Entity<int>
 {
     [MaxLength(sbyte.MaxValue)]
-    public string Token { get; set; } = null!;
+    public string Token { get; init; } = null!;
+    
+    [MaxLength(byte.MaxValue)]
+    public string UserId { get; init; } = null!;
 
-    public bool IsActive { get; set; } = true;
+    public bool IsActive { get; init; } = true;
 }

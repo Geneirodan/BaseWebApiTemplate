@@ -2,9 +2,8 @@ using BusinessLogic.Interfaces;
 using BusinessLogic.Models.Auth;
 using BusinessLogic.Models.User;
 using BusinessLogic.Options;
-using BusinessLogic.Validation;
-using BusinessLogic.Validation.Extensions;
 using DataAccess.Entities;
+using DataAccess.Repositories;
 using FluentResults;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
@@ -13,6 +12,7 @@ using System.Web;
 
 namespace BusinessLogic.Services;
 
+[ScopedService]
 public class AuthService(
     UserManager<User> userManager,
     SignInManager<User> signInManager,
@@ -20,14 +20,12 @@ public class AuthService(
     IMailService mailService,
     IOptions<IdentityOptions> identityOptions,
     IOptions<GoogleAuthOptions> googleOptions,
-    IUserService userService)
+    IUserRepository userRepository,
+    IUserService userService) : IAuthService
 {
     public async Task<Result<Tokens>> LoginAsync(LoginModel model)
     {
         var (userName, password) = model;
-        var validationResult = await new LoginValidator(identityOptions).ValidateAsync(model);
-        if (!validationResult.IsValid)
-            return validationResult.ToFluentResult();
 
         var user = await userManager.FindByNameAsync(userName)
                    ?? await userManager.FindByEmailAsync(userName);
@@ -37,25 +35,28 @@ public class AuthService(
 
         var result = await signInManager.PasswordSignInAsync(user, password, lockoutOnFailure: false, isPersistent: true);
 
-        if (!result.Succeeded)
+        if(result.IsNotAllowed)
+            return Result.Fail(Errors.Forbidden).WithError(nameof(result.IsNotAllowed));
+        
+        if (result.IsLockedOut)
             return Result.Fail("Unable to log in user");
 
-        var (_, isFailed, tokens, errors) = tokenService.CreateTokens(user.Email!);
-        return isFailed ? Result.Fail(errors) : Result.Ok(tokens);
+        var tokens = await tokenService.CreateTokensAsync(user);
+        return Result.Ok(tokens);
     }
 
     public Task LogoutAsync() => signInManager.SignOutAsync();
 
-    public Task<Result<UserViewModel>> RegisterAsync(RegisterModel model) => userService.CreateUserAsync(model, Roles.User);
+    public Task<Result<UserViewModel>> RegisterAsync(RegisterModel model) => userService.RegisterUserAsync(model, Roles.User);
 
-    public async Task<Result> ConfirmEmailAsync(ConfirmEmailModel model)
+    public async Task<Result> ConfirmEmailAsync(string userId, string token)
     {
-        var user = await userManager.FindByIdAsync(model.UserId);
+        var user = await userManager.FindByIdAsync(userId);
 
         if (user is null)
             return Result.Fail(Errors.NotFound);
 
-        var result = await userManager.ConfirmEmailAsync(user, model.Token);
+        var result = await userManager.ConfirmEmailAsync(user, token);
 
         return result.ToFluentResult();
     }
@@ -82,16 +83,33 @@ public class AuthService(
         return sendEmailResult.IsFailed ? Result.Fail(sendEmailResult.Errors) : Result.Ok();
     }
 
-    public async Task<Result<Tokens>> GoogleLogin(GoogleAuthModel model)
+    public async Task<Result<Tokens>> GoogleLogin(string token)
     {
         var settings = new GoogleJsonWebSignature.ValidationSettings
         {
-            // Change this to your google client ID
             Audience = new List<string> { googleOptions.Value.ClientId }
         };
 
-        var payload = await GoogleJsonWebSignature.ValidateAsync(model.Token, settings);
+        var payload = await GoogleJsonWebSignature.ValidateAsync(token, settings);
+        var user = await userRepository.GetAsync(x => x.Email == payload.Email);
+        if (user is null)
+        {
+            user = new User
+            {
+                Email = payload.Email,
+                UserName = payload.Email,
+                EmailConfirmed = true,
+            };
+            var identityResult = await userManager.CreateAsync(user);
 
-        return tokenService.CreateTokens(payload.Email);
+            if (!identityResult.Succeeded)
+                return identityResult.ToFluentResult();
+
+            var roleResult = await userManager.AddToRoleAsync(user, Roles.User);
+
+            if (!roleResult.Succeeded)
+                return roleResult.ToFluentResult();
+        }
+        return await tokenService.CreateTokensAsync(user);
     }
 }

@@ -1,15 +1,18 @@
+using BusinessLogic.Extensions;
+using BusinessLogic.Interfaces;
 using BusinessLogic.Models.PasswordRecovery;
-using BusinessLogic.Validation.Extensions;
 using BusinessLogic.Validation.PasswordRecovery;
 using DataAccess.Entities;
 using DataAccess.Interfaces;
+using DataAccess.Repositories;
 using FluentResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
 namespace BusinessLogic.Services;
 
-public class PasswordRecoveryService(UserManager<User> userManager, IUserRepository userRepository, IOptions<IdentityOptions> identityOptions)
+[ScopedService]
+public class PasswordRecoveryService(UserManager<User> userManager, IUserRepository userRepository, IOptions<IdentityOptions> identityOptions) : IPasswordRecoveryService
 {
     public async Task<Result> ResetPasswordAsync(ResetPasswordModel model)
     {

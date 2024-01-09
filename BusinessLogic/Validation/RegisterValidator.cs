@@ -1,13 +1,12 @@
-using BusinessLogic.Models;
+using BusinessLogic.Extensions;
 using BusinessLogic.Models.Auth;
-using BusinessLogic.Validation.Extensions;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
 namespace BusinessLogic.Validation;
 
-public class RegisterValidator: AbstractValidator<RegisterModel>
+public class RegisterValidator : AbstractValidator<RegisterModel>
 {
     public RegisterValidator(IOptions<IdentityOptions> options)
     {

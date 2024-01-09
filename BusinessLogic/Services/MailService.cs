@@ -10,6 +10,7 @@ namespace BusinessLogic.Services;
 
 // Should be replaced with some valid email sender api like SendGrid
 
+[ScopedService]
 public class MailService(IOptions<MailOptions> options, ILogger<MailService> logger) : IMailService
 {
     private readonly MailOptions _options = options.Value;

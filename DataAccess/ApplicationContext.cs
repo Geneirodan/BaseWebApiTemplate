@@ -6,7 +6,7 @@ namespace DataAccess;
 
 public class ApplicationContext(DbContextOptions<ApplicationContext> options) : IdentityDbContext<User, Role, string>(options)
 {
-    public virtual DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+    public virtual DbSet<RefreshToken> RefreshTokens { get; init; } = null!;
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) => optionsBuilder.UseLazyLoadingProxies();
 
 }

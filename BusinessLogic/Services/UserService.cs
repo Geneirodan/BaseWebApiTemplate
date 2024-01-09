@@ -1,13 +1,14 @@
 using AutoFilterer.Extensions;
+using BusinessLogic.Extensions;
 using BusinessLogic.Interfaces;
 using BusinessLogic.Models;
 using BusinessLogic.Models.Auth;
 using BusinessLogic.Models.Filters;
 using BusinessLogic.Models.User;
 using BusinessLogic.Validation;
-using BusinessLogic.Validation.Extensions;
 using DataAccess.Entities;
 using DataAccess.Interfaces;
+using DataAccess.Repositories;
 using FluentResults;
 using Mapster;
 using Microsoft.AspNetCore.Identity;
@@ -16,10 +17,11 @@ using Microsoft.Extensions.Options;
 
 namespace BusinessLogic.Services;
 
+[ScopedService]
 public class UserService(IUserRepository repository, UserManager<User> userManager, IOptions<IdentityOptions> options) : IUserService
 {
 
-    public async Task<Result<UserViewModel>> CreateUserAsync(RegisterModel model, string role)
+    public async Task<Result<UserViewModel>> RegisterUserAsync(RegisterModel model, string role, bool usePassword = true)
     {
         var validationResult = await new RegisterValidator(options).ValidateAsync(model);
 
@@ -59,16 +61,10 @@ public class UserService(IUserRepository repository, UserManager<User> userManag
             : Result.Fail("Unable to save changes while deleting user");
     }
 
-    public async Task<Result<UserViewModel>> GetUserByIdAsync(string id)
+    public async Task<UserViewModel?> GetUserByIdAsync(string id)
     {
         var user = await repository.GetAsync(id);
-
-        if (user is null)
-            return Result.Fail(Errors.NotFound);
-
-        var viewModel = user.Adapt<UserViewModel>();
-
-        return Result.Ok(viewModel);
+        return user?.Adapt<UserViewModel>();
     }
 
     public async Task<Result<PaginationModel<UserViewModel>>> GetUsersAsync(UserFilter filter)

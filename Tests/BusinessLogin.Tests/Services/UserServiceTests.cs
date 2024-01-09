@@ -1,5 +1,6 @@
 using AutoFilterer.Extensions;
 using BusinessLogic;
+using BusinessLogic.Interfaces;
 using BusinessLogic.Models;
 using BusinessLogic.Models.Auth;
 using BusinessLogic.Models.Filters;
@@ -9,6 +10,7 @@ using BusinessLogin.Tests.Data;
 using BusinessLogin.Tests.Extensions;
 using DataAccess.Entities;
 using DataAccess.Interfaces;
+using DataAccess.Repositories;
 using FluentAssertions;
 using FluentResults;
 using JetBrains.Annotations;
@@ -24,7 +26,7 @@ namespace BusinessLogin.Tests.Services;
 [TestSubject(typeof(UserService))]
 public class UserServiceTests
 {
-    private readonly UserService _userService;
+    private readonly IUserService _userService;
     private readonly Mock<IUserRepository> _repository;
     private readonly Mock<UserManager<User>> _userManager;
     private readonly IdentityOptions _options;
@@ -87,16 +89,7 @@ public class UserServiceTests
 
         var result = await _userService.GetUserByIdAsync(id);
 
-        if (UserData.validIds.Contains(id))
-        {
-            result.IsSuccess.Should().BeTrue();
-            result.ValueOrDefault.Should().BeEquivalentTo(user.Adapt<UserViewModel>());
-        }
-        else
-        {
-            result.IsSuccess.Should().BeFalse();
-            result.Errors.Should().ContainEquivalentOf(new Error(Errors.NotFound));
-        }
+        result.Should().BeEquivalentTo(user.Adapt<UserViewModel>());
     }
     public static TheoryData<UserPatchModel> UserPatchModels =>
         new()
@@ -204,7 +197,7 @@ public class UserServiceTests
     [Theory, MemberData(nameof(UserCreateModels))]
     public async void CreateUserAsync_ModelNotValid(RegisterModel model)
     {
-        var result = await _userService.CreateUserAsync(model, Roles.User);
+        var result = await _userService.RegisterUserAsync(model, Roles.User);
         var (userName, email, password) = model;
 
         result.IsSuccess.Should().BeFalse();
@@ -217,7 +210,7 @@ public class UserServiceTests
     public async void CreateUserAsync_RoleNotAllowed()
     {
         const string notAllowedRole = "Some role";
-        var result = await _userService.CreateUserAsync(validRegisterModel, notAllowedRole);
+        var result = await _userService.RegisterUserAsync(validRegisterModel, notAllowedRole);
 
         result.IsSuccess.Should().BeFalse();
         result.Errors.Should().ContainEquivalentOf(new Error($"The role {notAllowedRole} is not allowed"));
@@ -227,7 +220,7 @@ public class UserServiceTests
     [Fact]
     public async void CreateUserAsync()
     {
-        var result = await _userService.CreateUserAsync(validRegisterModel, Roles.User);
+        var result = await _userService.RegisterUserAsync(validRegisterModel, Roles.User);
 
         result.IsSuccess.Should().BeTrue();
         result.ValueOrDefault.Should().NotBeNull();
@@ -245,7 +238,7 @@ public class UserServiceTests
             .Setup(x => x.CreateAsync(It.IsAny<User>(), It.IsAny<string>()))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError()));
 
-        var result = await _userService.CreateUserAsync(validRegisterModel, Roles.User);
+        var result = await _userService.RegisterUserAsync(validRegisterModel, Roles.User);
 
         result.IsSuccess.Should().BeFalse();
         var (userName, _, password) = validRegisterModel;
@@ -261,7 +254,7 @@ public class UserServiceTests
             .Setup(x => x.AddToRoleAsync(It.IsAny<User>(), Roles.User))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError()));
 
-        var result = await _userService.CreateUserAsync(validRegisterModel, Roles.User);
+        var result = await _userService.RegisterUserAsync(validRegisterModel, Roles.User);
 
         result.IsSuccess.Should().BeFalse();
         var (userName, _, password) = validRegisterModel;

@@ -1,11 +1,17 @@
+using BusinessLogic.Extensions;
+using BusinessLogic.Models.Interfaces;
 using BusinessLogic.Models.PasswordRecovery;
-using BusinessLogic.Validation.Extensions;
+using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
 namespace BusinessLogic.Validation.PasswordRecovery;
 
-public class ResetPasswordValidator : Abstractions.PasswordValidator<ResetPasswordModel>
+public class ResetPasswordValidator : AbstractValidator<ResetPasswordModel>
 {
-    public ResetPasswordValidator(IOptions<IdentityOptions> options) : base(options) => RuleFor(x => x.Email).IsValidEmail();
+    public ResetPasswordValidator(IOptions<IdentityOptions> options)
+    {
+        RuleFor(x => x.Email).IsValidEmail();
+        RuleFor(x => x.Password).IsValidPassword(options.Value.Password);
+    }
 }

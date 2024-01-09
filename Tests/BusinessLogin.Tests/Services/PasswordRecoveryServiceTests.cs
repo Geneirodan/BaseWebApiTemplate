@@ -5,6 +5,7 @@ using BusinessLogin.Tests.Data;
 using BusinessLogin.Tests.Extensions;
 using DataAccess.Entities;
 using DataAccess.Interfaces;
+using DataAccess.Repositories;
 using FluentAssertions;
 using FluentResults;
 using JetBrains.Annotations;
@@ -98,9 +99,9 @@ public class PasswordRecoveryServiceTests
     public static readonly TheoryData<ResetPasswordModel> invalidResetPasswordModels =
         new()
         {
-            new ResetPasswordModel("sample@", "1String!", UserData.ValidToken),
+            new ResetPasswordModel("sample@", "String!", UserData.ValidToken),
             new ResetPasswordModel("@gmail", "1", UserData.ValidToken),
-            new ResetPasswordModel("email1gmail.com", "1String!", UserData.InvalidToken),
+            new ResetPasswordModel("email1gmail.com", "1String", UserData.InvalidToken),
         };
     
     [Theory, MemberData(nameof(invalidResetPasswordModels))]
