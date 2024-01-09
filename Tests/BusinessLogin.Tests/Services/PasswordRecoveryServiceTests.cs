@@ -4,7 +4,6 @@ using BusinessLogic.Services;
 using BusinessLogin.Tests.Data;
 using BusinessLogin.Tests.Extensions;
 using DataAccess.Entities;
-using DataAccess.Interfaces;
 using DataAccess.Repositories;
 using FluentAssertions;
 using FluentResults;

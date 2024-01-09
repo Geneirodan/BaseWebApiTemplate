@@ -3,7 +3,6 @@ using BusinessLogic.Interfaces;
 using BusinessLogic.Models.PasswordRecovery;
 using BusinessLogic.Validation.PasswordRecovery;
 using DataAccess.Entities;
-using DataAccess.Interfaces;
 using DataAccess.Repositories;
 using FluentResults;
 using Microsoft.AspNetCore.Identity;

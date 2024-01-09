@@ -1,8 +1,6 @@
 using BusinessLogic.Models.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using System.Net;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using WebApi.IntegrationTests.Extensions;
 namespace WebApi.IntegrationTests;
 

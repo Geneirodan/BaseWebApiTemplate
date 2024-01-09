@@ -1,5 +1,4 @@
 using BusinessLogic.Extensions;
-using BusinessLogic.Models.Interfaces;
 using BusinessLogic.Models.PasswordRecovery;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;

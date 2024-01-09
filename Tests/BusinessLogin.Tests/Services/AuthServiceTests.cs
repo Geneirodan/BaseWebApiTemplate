@@ -5,7 +5,6 @@ using BusinessLogic.Models.User;
 using BusinessLogic.Options;
 using BusinessLogic.Services;
 using BusinessLogin.Tests.Data;
-using BusinessLogin.Tests.Extensions;
 using DataAccess.Entities;
 using DataAccess.Repositories;
 using FluentAssertions;

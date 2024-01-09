@@ -1,7 +1,6 @@
 using BusinessLogic.Interfaces;
 using BusinessLogic.Models.Auth;
 using BusinessLogic.Models.User;
-using BusinessLogic.Services;
 using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

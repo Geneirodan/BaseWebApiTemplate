@@ -1,13 +1,10 @@
 using BusinessLogic;
-using BusinessLogic.Models;
 using BusinessLogic.Models.Auth;
 using BusinessLogic.Models.User;
 using BusinessLogic.Validation.Password;
 using FluentAssertions;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
-using System.Net.Http.Json;
 using WebApi.IntegrationTests.Extensions;
 using WebApi.Requests.Auth;
 
@@ -65,6 +62,7 @@ public class AuthControllerTests : IntegrationTest
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var details = await response.AsContent<ValidationProblemDetails>();
+        details?.Errors.ContainsKey(nameof(request.Password)).Should().BeTrue();
         var passwordErrors = details?.Errors[nameof(request.Password)];
         passwordErrors?.Should().ContainEquivalentOf(PasswordValidationErrors.RequireLowercase);
         passwordErrors?.Should().ContainEquivalentOf(PasswordValidationErrors.RequireUppercase);

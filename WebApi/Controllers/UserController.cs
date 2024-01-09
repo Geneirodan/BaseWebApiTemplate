@@ -4,7 +4,6 @@ using BusinessLogic.Models;
 using BusinessLogic.Models.Auth;
 using BusinessLogic.Models.Filters;
 using BusinessLogic.Models.User;
-using FluentResults;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApi.Utils;

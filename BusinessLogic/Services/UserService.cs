@@ -7,7 +7,6 @@ using BusinessLogic.Models.Filters;
 using BusinessLogic.Models.User;
 using BusinessLogic.Validation;
 using DataAccess.Entities;
-using DataAccess.Interfaces;
 using DataAccess.Repositories;
 using FluentResults;
 using Mapster;
