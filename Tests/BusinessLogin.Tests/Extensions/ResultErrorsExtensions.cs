@@ -7,41 +7,44 @@ namespace BusinessLogin.Tests.Extensions;
 
 public static class ResultErrorsExtensions
 {
-    internal static void TestUsernameValidation(this IEnumerable<IError> errors, string userName)
+    internal static void TestUsernameValidation(this List<IError> errors, string userName)
     {
-
-        errors.Should().ContainEquivalentOf(userName.Length == 0
+        errors.Should().ContainEquivalentOf(new Error("UserName"), c => c.Including(e => e.Message));
+        var reasons = errors.FirstOrDefault(x => x.Message == "UserName")?.Reasons;
+        reasons.Should().ContainEquivalentOf(userName.Length == 0
             ? new Error("\'User Name\' must not be empty.")
             : new Error($"\'User Name\' must be between 3 and 20 characters. You entered {userName.Length} characters."));
     }
-    internal static void TestEmailValidation(this IEnumerable<IError> errors, string email)
+    internal static void TestEmailValidation(this List<IError> errors, string email)
     {
-
-        errors.Should().ContainEquivalentOf(email.Length == 0
+        errors.Should().ContainEquivalentOf(new Error("Email"), c => c.Including(e => e.Message));
+        var reasons = errors.FirstOrDefault(x => x.Message == "Email")?.Reasons;
+        reasons.Should().ContainEquivalentOf(email.Length == 0
             ? new Error("\'Email\' must not be empty.")
             : new Error("\'Email\' is not a valid email address."));
     }
     internal static void TestPasswordValidationResult(this List<IError> errors, string password, IdentityOptions identityOptions)
     {
-
+        errors.Should().ContainEquivalentOf(new Error("Password"), c => c.Including(e => e.Message));
+        var reasons = errors.FirstOrDefault(x => x.Message == "Password")?.Reasons;
         if (password.Length == 0)
-            errors.Should().ContainEquivalentOf(new Error("\'Password\' must not be empty."));
+            reasons.Should().ContainEquivalentOf(new Error("\'Password\' must not be empty."));
         else
         {
             if (identityOptions.Password.RequireDigit && !password.Any(IsDigit))
-                errors.Should().ContainEquivalentOf(new Error(PasswordValidationErrors.RequireDigit));
+                reasons.Should().ContainEquivalentOf(new Error(PasswordValidationErrors.RequireDigit));
 
             if (identityOptions.Password.RequireLowercase && !password.Any(IsLower))
-                errors.Should().ContainEquivalentOf(new Error(PasswordValidationErrors.RequireLowercase));
+                reasons.Should().ContainEquivalentOf(new Error(PasswordValidationErrors.RequireLowercase));
 
             if (identityOptions.Password.RequireUppercase && !password.Any(IsUpper))
-                errors.Should().ContainEquivalentOf(new Error(PasswordValidationErrors.RequireUppercase));
+                reasons.Should().ContainEquivalentOf(new Error(PasswordValidationErrors.RequireUppercase));
 
             if (identityOptions.Password.RequireNonAlphanumeric && password.All(IsLetterOrDigit))
-                errors.Should().ContainEquivalentOf(new Error(PasswordValidationErrors.RequireNonAlphanumeric));
+                reasons.Should().ContainEquivalentOf(new Error(PasswordValidationErrors.RequireNonAlphanumeric));
         }
     }
-    
+
     private static bool IsDigit(char c) => c is >= '0' and <= '9';
 
     private static bool IsLower(char c) => c is >= 'a' and <= 'z';
