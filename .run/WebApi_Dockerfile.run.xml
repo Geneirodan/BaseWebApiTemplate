@@ -14,7 +14,7 @@
             </DockerPortBindingImpl>
           </list>
         </option>
-        <option name="sourceFilePath" value="WebApi/Dockerfile" />
+        <option name="sourceFilePath" value="src/WebApi/Dockerfile" />
       </settings>
     </deployment>
     <EXTENSION ID="com.jetbrains.rider.docker.debug" isFastModeEnabled="true" isSslEnabled="false" />
