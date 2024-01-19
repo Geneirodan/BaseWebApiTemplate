@@ -72,8 +72,6 @@ public class Program
 
         app.UseAuthorization();
 
-        app.UseRouting();
-
         app.MapControllers();
 
         await app.RunAsync();
