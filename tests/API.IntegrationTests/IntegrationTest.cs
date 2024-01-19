@@ -23,7 +23,7 @@ public class IntegrationTest
 
     private async Task Authorize(string username, string password)
     {
-        var response = await TestClient.PostAsync("api/auth/login", new { username, password }.ToJson());
+        var response = await TestClient.PostAsync("api/v1/login", new { username, password }.ToJson());
 
         var tokens = await response.AsContent<Tokens>();
 

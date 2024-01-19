@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[Route(Routes.ApiControllerAction)]
+[Route(Routes.ControllerAction)]
 public class RecoveryController(IRecoveryService recoveryService) : BaseController
 {
 

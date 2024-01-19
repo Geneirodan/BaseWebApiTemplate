@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Domain.Constants;
 using FluentResults;
 using Microsoft.AspNetCore.Mvc;

@@ -29,7 +29,7 @@ public class AuthControllerTests : IntegrationTest
     };
 
 
-    private const string Url = "api/auth";
+    private const string Url = "api/v1";
 
     [Fact]
     public async Task Register()

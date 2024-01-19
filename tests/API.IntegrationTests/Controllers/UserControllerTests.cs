@@ -20,7 +20,7 @@ public class UserControllerTests : IntegrationTest
         Password = "1String!"
     };
 
-    private const string Url = "api/user";
+    private const string Url = "api/v1/user";
     private const string? ApiUserCurrent = $"{Url}/current";
 
     [Fact]
