@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[Route(Routes.ApiController)]
+[Route(Routes.Controller)]
 public class UserController(IUserService userService) : BaseController
 {
     [HttpGet("current")]

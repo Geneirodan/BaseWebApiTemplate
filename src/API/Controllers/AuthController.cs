@@ -1,5 +1,6 @@
 using API.Requests.Auth;
 using API.Utils;
+using Asp.Versioning;
 using Domain.Interfaces;
 using Domain.Models.Auth;
 using Domain.Models.User;
@@ -8,10 +9,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[Route(Routes.ApiControllerAction)]
+[ApiVersion("1")]
+[Route(Routes.Action)]
 public class AuthController(IAuthService authService, ITokenService tokenService) : BaseController
 {
-    [HttpPost]
+    [HttpPost, MapToApiVersion("1")]
     public async Task<ActionResult<Tokens>> LoginAsync([FromBody] LoginRequest request)
     {
         var model = request.Adapt<LoginModel>();

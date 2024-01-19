@@ -16,22 +16,32 @@ public class Program
         var services = builder.Services;
         var configuration = builder.Configuration;
 
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = configuration["CONNECTION_STRING"];
         services.AddDbContext<ApplicationContext>(options => options.UseNpgsql(connectionString));
 
 
         services
             .AddAuthorization()
-            .Configure<IdentityOptions>(opts => opts.SignIn.RequireConfirmedEmail = bool.Parse(configuration[nameof(opts.SignIn.RequireConfirmedEmail)] ?? string.Empty))
+            .Configure<IdentityOptions>(opts =>
+                opts.SignIn.RequireConfirmedEmail = bool.Parse(configuration[nameof(opts.SignIn.RequireConfirmedEmail)] ?? string.Empty))
             .ConfigureOptions()
             .AddBusinessLogicServices()
             .AddEndpointsApiExplorer()
-            .AddSwagger();
-        services
-            .AddControllers()
-            .AddJsonOptions(options => 
-                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+            .AddSwagger()
+            .AddControllersWithViews(options => options.UseGeneralRoutePrefix("api/v{version:apiVersion}"))
+            .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
         services.AddBearerAuthentication();
+        services.AddApiVersioning(options =>
+            {
+                options.ReportApiVersions = true;
+                options.AssumeDefaultVersionWhenUnspecified = true;
+            })
+            .AddApiExplorer(options =>
+        {
+            // ReSharper disable once StringLiteralTypo
+            options.GroupNameFormat = "'v'VVV";
+            options.SubstituteApiVersionInUrl = true;
+        });
 
         services.AddCors(c =>
         {
@@ -61,6 +71,8 @@ public class Program
         app.UseAuthentication();
 
         app.UseAuthorization();
+
+        app.UseRouting();
 
         app.MapControllers();
 
