@@ -6,6 +6,7 @@ using Domain.Constants;
 using Domain.Models.Auth;
 using Domain.Models.User;
 using API.IntegrationTests.Extensions;
+using Geneirodan.Generics.CrudService.Constants;
 
 // ReSharper disable UseCollectionExpression
 
@@ -109,7 +110,5 @@ public class AuthControllerTests : IntegrationTest
         refreshToken.Should().NotBeNullOrEmpty();
         accessToken.Should().NotBeEquivalentTo(tokens.AccessToken);
         refreshToken.Should().NotBeEquivalentTo(tokens.RefreshToken);
-        
     }
-
 }

@@ -4,6 +4,7 @@ using Domain.Constants;
 using Domain.Interfaces;
 using Domain.Options;
 using FluentResults;
+using Geneirodan.Generics.CrudService.Attributes;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 

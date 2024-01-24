@@ -8,6 +8,8 @@ using Domain.Models;
 using Domain.Models.Auth;
 using Domain.Models.User;
 using API.IntegrationTests.Extensions;
+using Geneirodan.Generics.CrudService.Constants;
+using Geneirodan.Generics.CrudService.Models;
 
 namespace API.IntegrationTests.Controllers;
 

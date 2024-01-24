@@ -1,3 +1,4 @@
+using Geneirodan.Generics.Repository;
 using System.ComponentModel.DataAnnotations;
 
 namespace Infrastructure.Entities;

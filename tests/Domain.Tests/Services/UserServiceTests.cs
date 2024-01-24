@@ -9,6 +9,8 @@ using Domain.Tests.Extensions;
 using Domain.Tests.Data;
 using FluentAssertions;
 using FluentResults;
+using Geneirodan.Generics.CrudService.Constants;
+using Geneirodan.Generics.CrudService.Models;
 using Infrastructure.Entities;
 using Infrastructure.Interfaces;
 using JetBrains.Annotations;
@@ -116,14 +118,14 @@ public class UserServiceTests
         var user = UserData.usersTable.FirstOrDefault(x => x.Id == id);
 
         _repository.Setup(x => x.GetAsync(id)).ReturnsAsync(user);
-        _repository.Setup(x => x.ConfirmAsync()).ReturnsAsync(1);
+        _repository.Setup(x => x.ConfirmAsync(default)).ReturnsAsync(1);
 
         var result = await _userService.PatchUserAsync(id, new UserPatchModel("Name", "email@gmail.com"));
 
         if (validIds.Contains(id))
         {
             result.IsSuccess.Should().BeTrue();
-            _repository.Verify(x => x.ConfirmAsync(), Times.Once);
+            _repository.Verify(x => x.ConfirmAsync(default), Times.Once);
             result.Value.Should().BeEquivalentTo(new UserViewModel(id, "Name", "email@gmail.com"));
         }
         else
@@ -139,12 +141,12 @@ public class UserServiceTests
         const string id = "1";
         var user = UserData.usersTable.FirstOrDefault(x => x.Id == id);
         _repository.Setup(x => x.GetAsync(id)).ReturnsAsync(user);
-        _repository.Setup(x => x.ConfirmAsync()).ReturnsAsync(0);
+        _repository.Setup(x => x.ConfirmAsync(default)).ReturnsAsync(0);
 
         var result = await _userService.PatchUserAsync(id, new UserPatchModel("Name", "email@gmail.com"));
 
         result.IsSuccess.Should().BeFalse();
-        _repository.Verify(x => x.ConfirmAsync(), Times.Once);
+        _repository.Verify(x => x.ConfirmAsync(default), Times.Once);
         result.Errors.Should().ContainEquivalentOf(new Error("Unable to save changes while patching user"));
     }
 
@@ -153,14 +155,14 @@ public class UserServiceTests
     {
         var user = UserData.usersTable.FirstOrDefault(x => x.Id == id);
         _repository.Setup(x => x.GetAsync(id)).ReturnsAsync(user);
-        _repository.Setup(x => x.ConfirmAsync()).ReturnsAsync(1);
+        _repository.Setup(x => x.ConfirmAsync(default)).ReturnsAsync(1);
 
         var result = await _userService.DeleteUserAsync(id);
 
         if (UserData.validIds.Contains(id))
         {
             result.IsSuccess.Should().BeTrue();
-            _repository.Verify(x => x.ConfirmAsync(), Times.Once);
+            _repository.Verify(x => x.ConfirmAsync(default), Times.Once);
         }
         else
         {
@@ -175,12 +177,12 @@ public class UserServiceTests
         const string id = "1";
         var user = UserData.usersTable.FirstOrDefault(x => x.Id == id);
         _repository.Setup(x => x.GetAsync(id)).ReturnsAsync(user);
-        _repository.Setup(x => x.ConfirmAsync()).ReturnsAsync(0);
+        _repository.Setup(x => x.ConfirmAsync(default)).ReturnsAsync(0);
 
         var result = await _userService.DeleteUserAsync(id);
 
         result.IsSuccess.Should().BeFalse();
-        _repository.Verify(x => x.ConfirmAsync(), Times.Once);
+        _repository.Verify(x => x.ConfirmAsync(default), Times.Once);
         result.Errors.Should().ContainEquivalentOf(new Error("Unable to save changes while deleting user"));
     }
 

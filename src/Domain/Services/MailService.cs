@@ -1,6 +1,7 @@
 using Domain.Interfaces;
 using Domain.Options;
 using FluentResults;
+using Geneirodan.Generics.CrudService.Attributes;
 using MailKit.Net.Smtp;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

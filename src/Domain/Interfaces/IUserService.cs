@@ -3,6 +3,7 @@ using Domain.Models.Auth;
 using Domain.Models.Filters;
 using Domain.Models.User;
 using FluentResults;
+using Geneirodan.Generics.CrudService.Models;
 
 namespace Domain.Interfaces;
 

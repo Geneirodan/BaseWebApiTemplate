@@ -7,6 +7,7 @@ using Domain.Services;
 using Domain.Tests.Data;
 using FluentAssertions;
 using FluentResults;
+using Geneirodan.Generics.CrudService.Constants;
 using Infrastructure.Entities;
 using Infrastructure.Interfaces;
 using Mapster;

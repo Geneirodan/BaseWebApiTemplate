@@ -1,6 +1,7 @@
+using Geneirodan.Generics.CrudService.Extensions;
+using Geneirodan.Generics.Repository.Extensions;
 using Infrastructure;
 using Infrastructure.Entities;
-using Infrastructure.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,17 +16,8 @@ public static class ServiceCollectionExtensions
             .AddEntityFrameworkStores<ApplicationContext>()
             .AddDefaultTokenProviders();
         
-        services.AddRepositories();
-        return services.Scan(i => i.FromCallingAssembly()
-            .AddClasses(c => c.WithAttribute<TransientServiceAttribute>())
-            .AsImplementedInterfaces()
-            .WithTransientLifetime()
-            .AddClasses(c => c.WithAttribute<ScopedServiceAttribute>())
-            .AsImplementedInterfaces()
-            .WithScopedLifetime()
-            .AddClasses(c => c.WithAttribute<SingletonServiceAttribute>())
-            .AsImplementedInterfaces()
-            .WithSingletonLifetime()
-        );
+        return services
+            .AddRepositoriesFromAssemblyOf<ApplicationContext>()
+            .AddServicesFromAssemblyOf<AssemblyReference>();
     }
 }

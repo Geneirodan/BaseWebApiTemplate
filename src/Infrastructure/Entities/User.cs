@@ -1,4 +1,4 @@
-using Infrastructure.Interfaces;
+using Geneirodan.Generics.Repository.Interfaces;
 using Microsoft.AspNetCore.Identity;
 
 namespace Infrastructure.Entities;
